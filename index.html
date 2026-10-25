@@ -1193,8 +1193,8 @@ function renderSectionsEditor() {
             </div>
             <div class="field-row">
               <div class="field-group">
-                <label class="field-label">Organisation</label>
-                <input class="field-input" placeholder="Org name (or leave blank)" value="${esc(en.org)}" data-si="${si}" data-ei="${ei}" data-f="org" />
+                <label class="field-label">Organisation / Description</label>
+                <input class="field-input" placeholder="Org name or short description (italic line under the title)" value="${esc(en.org)}" data-si="${si}" data-ei="${ei}" data-f="org" />
               </div>
               <div class="field-group" style="max-width:110px;">
                 <label class="field-label">Date</label>
@@ -1223,14 +1223,6 @@ function renderSectionsEditor() {
                 <input class="field-input" placeholder="e.g. Python, PyTorch..." value="${esc(en.tools || '')}" data-si="${si}" data-ei="${ei}" data-f="tools" />
               </div>
             </div>
-            
-            <div class="field-group" style="padding-top: 6px;">
-               <label style="display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
-                   <input type="checkbox" data-si="${si}" data-ei="${ei}" data-f="toolsNewLine" ${en.toolsNewLine ? 'checked' : ''} />
-                   <span class="field-label" style="margin:0; text-transform:none; letter-spacing:0; font-weight:500;">Start tools on a new line</span>
-               </label>
-            </div>
-            
             <div class="field-row">
               <div class="field-group">
                 <label class="field-label">Link Text <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span></label>
@@ -1572,9 +1564,7 @@ function renderEntriesTable(entries) {
   const bg = state.globalBulGap !== undefined && state.globalBulGap !== '' ? state.globalBulGap : 0;
   
   return entries.map((en, idx) => {
-    const titlePart = en.org && en.org.trim()
-      ? `<span class="r-et-title">${esc(en.title)}</span><span class="r-et-sep">|</span><span class="r-et-org">${esc(en.org)}</span>`
-      : `<span class="r-et-title">${esc(en.title)}</span>`;
+    const titlePart = `<span class="r-et-title">${esc(en.title)}</span>`;
     
     // Update the link to use formatUrl
     const linkPart = (en.linkUrl || '').trim() && (en.linkLabel || '').trim()
@@ -1583,35 +1573,30 @@ function renderEntriesTable(entries) {
     const dateCell = (en.date || '').trim() ? `<td class="r-et-date">${esc(en.date)}</td>` : `<td></td>`;
     
     const hasSup = (en.supervisor || '').trim();
+    const hasOrg = (en.org || '').trim();
     const hasTools = (en.tools || '').trim();
     const sLabel = en.supervisorLabel || 'Supervisor';
     const tLabel = en.toolsLabel || 'Tools & Technologies';
     
+    // Sub-heading rows: supervisor line, then the short description (Organisation field)
     let subRowHtml = '';
-    
-    if (hasSup && hasTools && en.toolsNewLine) {
-         subRowHtml = `<tr class="r-et-sup-row"><td colspan="2">${esc(sLabel)}: ${esc(hasSup)}</td></tr>
-                       <tr class="r-et-sup-row"><td colspan="2">${esc(tLabel)}: ${esc(hasTools)}</td></tr>`;
-    } else {
-         const subParts = [];
-         if (hasSup) subParts.push(`${esc(sLabel)}: ${esc(hasSup)}`);
-         if (hasTools) subParts.push(`${esc(tLabel)}: ${esc(hasTools)}`);
-         if (subParts.length) {
-             subRowHtml = `<tr class="r-et-sup-row"><td colspan="2">${subParts.join(' &nbsp;·&nbsp; ')}</td></tr>`;
-         }
-    }
+    if (hasSup) subRowHtml += `<tr class="r-et-sup-row"><td colspan="2">${esc(sLabel)}: ${esc(hasSup)}</td></tr>`;
+    if (hasOrg) subRowHtml += `<tr class="r-et-sup-row"><td colspan="2">${esc(hasOrg)}</td></tr>`;
 
     const headTable = `<table class="r-entries-table" style="margin-bottom: 0;"><tbody><tr class="r-et-title-row"><td>${titlePart}${linkPart}</td>${dateCell}</tr>${subRowHtml}</tbody></table>`;
 
-    const lines = (en.bullets || '').split('\n').filter(l => l.trim());
-    const bulletsHtml = lines.map((line, bIdx) => {
-      const t = line.trim();
+    // Bullet points; "Tools & Technologies" is rendered as the last bullet point
+    const bulletLines = (en.bullets || '').split('\n').filter(l => l.trim()).map(t => {
       const sp = t.indexOf(' ');
       let inner = '';
       if (sp > 0) inner = `<strong>${esc(t.slice(0,sp))}</strong>${esc(t.slice(sp))}`;
       else inner = esc(t);
-      
-      const marginStyle = bIdx < lines.length - 1 ? `margin-bottom: ${bg}px;` : '';
+      return inner;
+    });
+    if (hasTools) bulletLines.push(`<strong>${esc(tLabel)}:</strong> ${esc(hasTools)}`);
+    
+    const bulletsHtml = bulletLines.map((inner, bIdx) => {
+      const marginStyle = bIdx < bulletLines.length - 1 ? `margin-bottom: ${bg}px;` : '';
       return `<ul class="r-bullets" style="${marginStyle}"><li>${inner}</li></ul>`;
     }).join('');
 
